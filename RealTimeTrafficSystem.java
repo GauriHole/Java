@@ -1,3 +1,4 @@
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -32,6 +33,7 @@ class TrafficLight {
 class Intersection {
     private final TrafficLight northSouth;
     private final TrafficLight eastWest;
+    private final AtomicBoolean running = new AtomicBoolean(true);
 
     public Intersection() {
         this.northSouth = new TrafficLight("Green");
@@ -40,12 +42,13 @@ class Intersection {
 
     public void simulateTraffic() {
         new Thread(() -> {
-            while (true) {
+            while (running.get()) {
                 try {
                     Thread.sleep(10000); // 10 seconds
                     changeLights();
                 } catch (InterruptedException e) {
-                    e.printStackTrace();
+                    Thread.currentThread().interrupt();
+                    System.out.println("Thread was interrupted");
                 }
             }
         }).start();
@@ -66,6 +69,10 @@ class Intersection {
         northSouth.changeColor("Red");
         eastWest.changeColor("Green");
     }
+
+    public void stopSimulation() {
+        running.set(false);
+    }
 }
 
 public class RealTimeTrafficSystem {
@@ -78,6 +85,17 @@ public class RealTimeTrafficSystem {
             try {
                 Thread.sleep(15000); // 15 seconds
                 intersection.prioritizeEmergencyVehicle();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }).start();
+
+        // Stop the simulation after 20 seconds
+        new Thread(() -> {
+            try {
+                Thread.sleep(20000); // 20 seconds
+                intersection.stopSimulation();
+                System.out.println("Simulation stopped.");
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
